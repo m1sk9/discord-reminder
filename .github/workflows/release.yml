@@ -1,0 +1,83 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    name: build ${{ matrix.goos }}/${{ matrix.goarch }}
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - goos: linux
+            goarch: amd64
+          - goos: linux
+            goarch: arm64
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: jdx/mise-action@v4
+        with:
+          install: true
+          cache: true
+
+      - name: build binary
+        env:
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+          CGO_ENABLED: "0"
+        run: |
+          go build -trimpath -ldflags "-s -w" -o discord-reminder .
+
+      - name: stage release artifacts
+        env:
+          VERSION: ${{ github.ref_name }}
+          GOOS: ${{ matrix.goos }}
+          GOARCH: ${{ matrix.goarch }}
+        run: |
+          stage="discord-reminder-${VERSION}-${GOOS}-${GOARCH}"
+          mkdir -p "dist/${stage}/packaging"
+          cp discord-reminder "dist/${stage}/"
+          cp config.toml.example "dist/${stage}/"
+          cp secrets.toml.example "dist/${stage}/"
+          cp install.sh "dist/${stage}/"
+          cp packaging/discord-reminder.service "dist/${stage}/packaging/"
+          tar -C dist -czf "dist/${stage}.tar.gz" "${stage}"
+          (cd dist && sha256sum "${stage}.tar.gz" > "${stage}.tar.gz.sha256")
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: discord-reminder-${{ github.ref_name }}-${{ matrix.goos }}-${{ matrix.goarch }}
+          path: |
+            dist/*.tar.gz
+            dist/*.tar.gz.sha256
+          if-no-files-found: error
+          retention-days: 1
+
+  release:
+    name: publish release
+    needs: build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/download-artifact@v4
+        with:
+          path: dist
+          merge-multiple: true
+
+      - name: create GitHub release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          VERSION: ${{ github.ref_name }}
+        run: |
+          gh release create "${VERSION}" \
+            --title "${VERSION}" \
+            --generate-notes \
+            dist/*.tar.gz dist/*.tar.gz.sha256

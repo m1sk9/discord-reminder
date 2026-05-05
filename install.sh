@@ -40,7 +40,41 @@ fail() { printf '[install] error: %s\n' "$*" >&2; exit 1; }
 [ "$(uname -s)" = "Linux" ] || fail "Linux only (got: $(uname -s))"
 command -v systemctl >/dev/null 2>&1 || fail "systemctl not found"
 command -v tar       >/dev/null 2>&1 || fail "tar not found"
-command -v useradd   >/dev/null 2>&1 || fail "useradd not found"
+
+# locate a "no login" shell across distros (Debian/RHEL: /usr/sbin/nologin,
+# Alpine: /sbin/nologin)
+detect_nologin() {
+  for p in /usr/sbin/nologin /sbin/nologin; do
+    if [ -x "$p" ]; then
+      printf '%s\n' "$p"
+      return 0
+    fi
+  done
+  return 1
+}
+
+# create a system user across distros: shadow-utils useradd (Debian/RHEL/SUSE)
+# or BusyBox adduser (Alpine). Sets shell, no home, no password.
+create_system_user() {
+  name="$1"
+  shell="$(detect_nologin)" || fail "no nologin shell found (looked in /usr/sbin and /sbin)"
+
+  if command -v useradd >/dev/null 2>&1; then
+    useradd --system --no-create-home --shell "$shell" "$name"
+    return
+  fi
+
+  if command -v adduser >/dev/null 2>&1; then
+    if adduser --help 2>&1 | grep -qi busybox; then
+      # BusyBox adduser (Alpine): -S system, -H no home, -D no password
+      adduser -S -H -D -s "$shell" "$name"
+      return
+    fi
+    fail "found adduser but it does not look like BusyBox; refusing to guess syntax"
+  fi
+
+  fail "no user-creation tool found (looked for: useradd, BusyBox adduser)"
+}
 
 # 1. resolve source dir (LOCAL or REMOTE)
 SRC_DIR=""
@@ -116,7 +150,7 @@ if id "$USER_NAME" >/dev/null 2>&1; then
   log "user $USER_NAME already exists"
 else
   log "creating system user $USER_NAME"
-  useradd --system --no-create-home --shell /usr/sbin/nologin "$USER_NAME"
+  create_system_user "$USER_NAME"
 fi
 
 # 3. install binary

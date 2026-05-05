@@ -1,0 +1,53 @@
+{
+  "enable_language_server": true,
+  "format_on_save": "on",
+  "formatter": "language_server",
+  "language_servers": ["!biome", "gopls"],
+  "languages": {
+    "Go": {
+      "tab_size": 4,
+      "hard_tabs": true,
+      "indent_guides": {
+        "enabled": true
+      },
+      "inlay_hints": {
+        "enabled": true,
+        "show_parameter_hints": true,
+        "show_type_hints": true,
+        "show_other_hints": true
+      },
+      "code_actions_on_format": {
+        "source.organizeImports": true
+      }
+    }
+  },
+  "lsp": {
+    "gopls": {
+      "binary": {
+        "path": "/Users/m1sk9/.local/share/mise/shims/gopls",
+        "arguments": [],
+        "ignore_system_version": true
+      },
+      "initialization_options": {
+        "usePlaceholders": true,
+        "completeUnimported": true,
+        "staticcheck": true,
+        "hints": {
+          "assignVariableTypes": true,
+          "compositeLiteralFields": true,
+          "compositeLiteralTypes": true,
+          "constantValues": true,
+          "functionTypeParameters": true,
+          "parameterNames": true,
+          "rangeVariableTypes": true
+        },
+        "analyses": {
+          "unusedparams": true,
+          "unusedwrite": true,
+          "nilness": true,
+          "shadow": true
+        }
+      }
+    }
+  }
+}

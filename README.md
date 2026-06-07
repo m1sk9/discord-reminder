@@ -1,3 +1,11 @@
+> [!CAUTION]
+>
+> We have migrated to [chime](https://github.com/m1sk9/chime), which was reimplemented in Rust to improve safety and robustness.
+> 
+> Although this project started as a personal one, we are now expanding the scope of maintenance and continuing development so that others can use [chime](https://github.com/m1sk9/chime) as well.
+> 
+> discord-reminder will be discontinued as of June 7, 2026, at 8:00 PM. Since it is not open-source software, it will not enter maintenance mode. This is a complete discontinuation. Use at your own risk.
+
 # discord-reminder
 
 [![CI](https://github.com/m1sk9/discord-reminder/actions/workflows/ci.yml/badge.svg)](https://github.com/m1sk9/discord-reminder/actions/workflows/ci.yml)
